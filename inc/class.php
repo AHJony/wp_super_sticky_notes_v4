@@ -63,6 +63,11 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             add_action('wp_ajax_nopriv_unlikeajax', array($this, 'unlikeajax'));
             add_action( 'wp_ajax_unlikeajax', array($this, 'unlikeajax') );
 
+            // New Comment Via ajax without page reload
+            add_action('wp_ajax_nopriv_newCommentViaAjax', array($this, 'newCommentViaAjax'));
+            add_action( 'wp_ajax_newCommentViaAjax', array($this, 'newCommentViaAjax') );
+
+
             //note save 
             add_action('admin_init', array($this, 'notes_save_create_db'));
 
@@ -81,7 +86,28 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             //avatar defaults
             add_filter( 'avatar_defaults', array( $this, 'mytheme_default_avatar' ), 102, 1 );
 
+            add_action('wp_head', array($this, 'testFunction'));
+
         }
+
+
+        public function testFunction(){
+            if(isset($_GET['note'])){
+                echo 'omar get note';
+            }else{
+                echo 'Omar Note not get';
+            }
+        }
+
+
+        public function newCommentViaAjax(){
+            /*
+            * New Comment Via ajax without page load
+            */
+            echo 'test omar from ajax';
+            wp_die();
+        }
+
 
         /*
         * its append add action line 62
@@ -216,10 +242,11 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $top_admin_unlike[$single_like_comment->id] = count(array_filter($top_admin_unlikess));
             }
 
-            $top_user_like_ids = array_keys($top_user_like, max($top_user_like));
-            $top_user_unlike_ids = array_keys($top_user_unlike, max($top_user_unlike));
-            $top_admin_like_ids = array_keys($top_admin_like, max($top_admin_like));
-            $top_admin_unlike_ids = array_keys($top_admin_unlike, max($top_admin_unlike));
+
+            if(count($top_user_like) > 0) $top_user_like_ids = array_keys($top_user_like, max($top_user_like));
+            if(count($top_user_unlike) > 0) $top_user_unlike_ids = array_keys($top_user_unlike, max($top_user_unlike));
+            if(count($top_admin_like) > 0) $top_admin_like_ids = array_keys($top_admin_like, max($top_admin_like));
+            if(count($top_admin_unlike) > 0) $top_admin_unlike_ids = array_keys($top_admin_unlike, max($top_admin_unlike));
 
             $top_user_like_note = $this->wpdb->get_results( "SELECT `user_id`, `note_values`, `comment_user_like` FROM $table_name WHERE `id` = $top_user_like_ids[0]", OBJECT);
             $top_user_like_note = json_decode(json_encode($top_user_like_note), true);
@@ -405,6 +432,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             $top_user_unlike = array();
             $top_admin_like = array();
             $top_admin_unlike = array();
+            
             foreach($all_user_comment_likes_unlikes as $single_like_comment){
                 $top_user_likes = $single_like_comment->comment_user_like;
                 $top_user_likess = explode(',', $top_user_likes);
@@ -423,14 +451,14 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $top_admin_unlike[$single_like_comment->id] = count(array_filter($top_admin_unlikess));
             }
 
-            $top_user_like_ids = array_keys($top_user_like, max($top_user_like));
-            $top_user_unlike_ids = array_keys($top_user_unlike, max($top_user_unlike));
-            $top_admin_like_ids = array_keys($top_admin_like, max($top_admin_like));
-            $top_admin_unlike_ids = array_keys($top_admin_unlike, max($top_admin_unlike));
-            $top_user_like_id = implode(",",$top_user_like_ids);
-            $top_user_unlike_id = implode(",",$top_user_unlike_ids);
-            $top_admin_like_id = implode(",",$top_admin_like_ids);
-            $top_admin_unlike_id = implode(",",$top_admin_unlike_ids);
+            if(count($top_user_like) > 0) $top_user_like_ids = array_keys($top_user_like, max($top_user_like));
+            if(count($top_user_unlike) > 0) $top_user_unlike_ids = array_keys($top_user_unlike, max($top_user_unlike));
+            if(count($top_admin_like) > 0) $top_admin_like_ids = array_keys($top_admin_like, max($top_admin_like));
+            if(count($top_admin_unlike) > 0) $top_admin_unlike_ids = array_keys($top_admin_unlike, max($top_admin_unlike));
+            $top_user_like_id = (count($top_user_like) > 0) ? implode(",", $top_user_like_ids) : '';
+            $top_user_unlike_id = (count($top_user_unlike) > 0) ? implode(",",$top_user_unlike_ids) : '';
+            $top_admin_like_id = (count($top_admin_like) > 0) ? implode(",",$top_admin_like_ids) : '';
+            $top_admin_unlike_id = (count($top_admin_unlike) > 0) ? implode(",",$top_admin_unlike_ids) : '';
 
 
             $wssn_restrict_number = '';
@@ -451,7 +479,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             // Not using imagesLoaded? :( Okay... then this.
             //we used qtip here.
             wp_enqueue_script('qtipjs', $this->plugin_url . 'asset/qtip_asset/jquery.qtip.min.js', array(), time(), true);
-            wp_enqueue_script('larasoftbd_NoteJS', $this->plugin_url . 'asset/js/ls_note_frontend.js', array('jquery'), time(), true);
+            wp_enqueue_script('larasoftbd_NoteJS', $this->plugin_url . 'asset/js/ls_note_frontend.js', array('jquery'), time(), false);
             // wp_enqueue_script('tinymceJS', '//cdn.tinymce.com/4/tinymce.min.js', array('jquery'), time(), true);
             wp_enqueue_editor();
             //ajax
@@ -933,6 +961,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
 
                     foreach($list as $p){
                         $p->setAttribute('class', 'p-class'.$i++);
+                        $p->setAttribute('onClick', 'commentEvent(this);');
                     }
                     $DOM=$DOM->saveHTML();
                     $content = $DOM;
@@ -1035,6 +1064,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                     $i = 0;
                     foreach($list as $p){
                         $p->setAttribute('class', 'p-class'.$i++);
+                        $p->setAttribute('onClick', 'commentEvent(this);');
                     }
                     $DOM=$DOM->saveHTML();
                     $content = $DOM;
