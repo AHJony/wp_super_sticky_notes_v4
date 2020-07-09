@@ -86,7 +86,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             //avatar defaults
             add_filter( 'avatar_defaults', array( $this, 'mytheme_default_avatar' ), 102, 1 );
 
-            add_action('wp_head', array($this, 'testFunction'));
+            // add_action('wp_head', array($this, 'testFunction'));
 
         }
 

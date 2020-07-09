@@ -10,7 +10,7 @@ var addQtip = function(element){
     // var note_admin_avatar_url = notesAjax.note_admin_avatar_url;
     //console.log('single priv: ' +note_user_avatar_url);
     // notesAjax.submitoreply[data_id] == 1
-    console.log(data_id);
+    // console.log(data_id);
     var yourcomment = '', 
     current_user_data = '',
     submitorreply = 'SUBMIT';
@@ -147,19 +147,19 @@ var commentEvent = function(evt){
         //jQuery('p, span, li, ...').disableSelection();
         
         //$('p, span, li, ...').not('input').disableSelection();
-        console.log(evt);
+        // console.log(evt);
  
         var status = localStorage.getItem("sticky_comment");
 
-        jQuery(evt).find('span').addClass('test Omar Faruque');
+        // jQuery(evt).find('span').addClass('test Omar Faruque');
         
-        console.log('length: ' + jQuery(evt).find('sub.new').length);
-        console.log('status: ' + status);
+        // console.log('length: ' + jQuery(evt).find('sub.new').length);
+        // console.log('status: ' + status);
 
         // if(jQuery(evt).find('sub.new').length == 0 && notesAjax.status == 'active'){
             if(jQuery(evt).find('sub.new').length == 0 && status == 'active'){
         
-        console.log('inside');
+        // console.log('inside');
         var content = jQuery(evt);
         var parentClass = jQuery(evt).parent().attr('class');
         var currentClass = jQuery(evt).attr('class');
@@ -193,7 +193,7 @@ var commentEvent = function(evt){
         var thishtml = jQuery(evt).html();
         
         var selection = window.getSelection();
-        console.log(evt);
+        // console.log(evt);
             var result = thishtml;
             
             result = decodeHtml(result);
@@ -315,7 +315,31 @@ jQuery(document).ready(function($){
                     jQuery('#successMsgSticky').fadeIn('slow', function(){
                         setTimeout(function(){
                             jQuery('#successMsgSticky').fadeOut('show');
-                            window.location.href = current_page_url;
+                            // window.location.href = current_page_url;
+
+
+                            // Load comment after successful insert comment
+                            jQuery.ajax({
+                                type : 'post',
+                                dataType: 'html',
+                                url : window.location.href,
+                                success:function(data){
+                                    var returnHtml = jQuery(data).find('div.supper_sticky_note').html();
+                                    jQuery('div.supper_sticky_note').html(returnHtml);
+
+                                    jQuery('.note-question-icon-button').each(function () {
+                                        addQtip(jQuery(this));
+                                    });
+                                    
+                                    localStorage.removeItem("sticky_comment");
+                                }, 
+                                error:function(){
+                                    console.log('error');
+                                }
+                            }); 
+
+
+
                         }, 4000);
                     });
                     

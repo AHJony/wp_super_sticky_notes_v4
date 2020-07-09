@@ -9,7 +9,7 @@
  * Text Domain: wp_super_sticky_notes
  * Domain Path: /languages
  * Requires at least: 4.0
- * Tested up to: 4.8
+ * Tested up to: 4.8 d
  *
  * @package     wp_super_sticky_notes
  * @category 	Core
