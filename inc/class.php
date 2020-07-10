@@ -870,7 +870,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 }
             }
 
-            $j = '';
+            $j = 'no';
                $insert = $this->wpdb->insert( 
                     $table_name, 
                     array(
@@ -888,13 +888,21 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                     array('%d', '%d', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s')
                 );
                 //insert data end
-                $j = ($insert) ? 'yes' : 'no';
+                
+                if($insert){
+                    $j = 'yes';
+                    $lastData = $this->wpdb->get_row('SELECT * FROM '.$table_name.' WHERE id='.$this->wpdb->insert_id);
+                    $userDetails = get_user_by( 'id', $lastData->user_id );
+                    $lastData->user_nicename = $userDetails->user_nicename;
+                }
+                 
             // }
 
             echo json_encode(
                 array(
                     'message' => $j,
-                    'priv' => $priv
+                    'priv' => $priv,
+                    'insert' => $lastData
                 ));
             die();
 
