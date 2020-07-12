@@ -827,6 +827,10 @@ ul.user-button-ul {
     margin: 0 auto;
     text-align: left;
     transition: all 0.4s ease 0s;
+    padding-left: 0;
+}
+span.userHideSticky img{
+    margin-top: -9px;
 }
 li.note-new-comment {
     cursor: pointer;
