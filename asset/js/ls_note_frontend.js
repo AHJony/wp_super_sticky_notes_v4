@@ -664,7 +664,10 @@ jQuery(document).ready(function($){
                 // console.log('keyup');  
                 tinyMCE.init({
                     mode : "none",
-                    statusbar: false,
+                    plugins: "media link image",
+                    // menubar: "insert",
+                    toolbar: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media",
+                    statusbar: true,
                     charLimit : notesAjax.wssn_restrict_number,
                     setup: function (editor) {
                         editor.on('change', function () {

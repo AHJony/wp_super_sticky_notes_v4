@@ -1103,3 +1103,6 @@ span.wpssn_rchars {
 .wp-ssn-user-unlike-cunter.top {
     color: red;
 }
+.bs-theme .mce-tinymce button {
+    background-color: unset;
+}

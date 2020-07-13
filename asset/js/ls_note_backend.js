@@ -104,26 +104,26 @@ window.onload = function () {
       top_page_datapoints.push(newObject);
   }
  
-  var top_page_options = {
+
+  var chart = new CanvasJS.Chart("chartContainer", {
+    animationEnabled: true,
     title: {
       text: "Top ten posts/pages that comments with numbers"              
     },
-    data: [              
-    {
-      // Change type to "column", "doughnut", "line", "splineArea", etc.
-      // type: "doughnut",
+    data: [{
       type: "pie",
-			startAngle: 45,
-			showInLegend: "true",
-			legendText: "{label}",
-			indexLabel: "{label} ({y})",
-			yValueFormatString:"#,##0.#"%"",
+      startAngle: 240,
+      yValueFormatString: "##0.00\"%\"",
+      indexLabel: "{label} {y}",
       dataPoints: top_page_datapoints
-    }
-    ]
-  };
+    }]
+  });
+  chart.render();
 
-  jQuery(".top-ten-page").CanvasJSChart(top_page_options);
+
+
+
+
 
   var top_users_name = notesAjax.top_users_name;
   var top_users_comment = notesAjax.top_users_comment;
@@ -135,26 +135,23 @@ window.onload = function () {
       top_users_datapoints.push(newObject);
   }
 
-  var top_user_options = {
+
+
+  var toptenuserchart = new CanvasJS.Chart("topTenUser", {
+    animationEnabled: true,
     title: {
       text: "Top ten users with highest comments"              
     },
-    data: [              
-    {
-      
-      // Change type to "doughnut", "line", "splineArea", etc.
-      // type: "doughnut",
+    data: [{
       type: "pie",
-			startAngle: 45,
-			showInLegend: "true",
-			legendText: "{label}",
-			indexLabel: "{label} ({y})",
-			yValueFormatString:"#,##0.#"%"",
+      startAngle: 240,
+      yValueFormatString: "##0.00\"%\"",
+      indexLabel: "{label} {y}",
       dataPoints: top_users_datapoints
-    }
-    ]
-  };
-  jQuery(".top-ten-user").CanvasJSChart(top_user_options);
+    }]
+  });
+  toptenuserchart.render();
+
 
   var user_name = notesAjax.user_name;
   var user_comment = notesAjax.user_comment;
@@ -166,27 +163,26 @@ window.onload = function () {
   var user_like_unlike1 = (typeof user_like_unlike[0] == 'undefined') ? '' : user_like_unlike[0];
   var user_like_unlike2 = (typeof user_like_unlike[1] == 'undefined') ? '' : user_like_unlike[1];
 
-  var top_like_unlike_options = {
+
+
+  var toptenuserchartUnlike = new CanvasJS.Chart("toptenLikeUnlike", {
+    animationEnabled: true,
     title: {
       text: "Most liked and disliked comments"              
     },
-    data: [              
-    {
-      
-      // Change type to "doughnut", "line", "splineArea", etc.
-      // type: "splineArea",
+    data: [{
       type: "pie",
-			startAngle: 45,
-			showInLegend: "true",
-			legendText: "{label}",
-			indexLabel: "{label} ({y})",
-			yValueFormatString:"#,##0.#"%"",
+      startAngle: 240,
+      yValueFormatString: "##0.00\"%\"",
+      indexLabel: "{label} {y}",
       dataPoints: [
         { label: user_name1, y: Number(user_like_unlike1) },
         { label: user_name2, y: Number(user_like_unlike2) }
       ]
-    }
-    ]
-  };
-  jQuery(".top-ten-like-unlike").CanvasJSChart(top_like_unlike_options);
+    }]
+  });
+  toptenuserchartUnlike.render();
+
+
+
 }

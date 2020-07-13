@@ -866,9 +866,9 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $user_info = get_userdata($note_user_id);
                 $user_email = $user_info->user_email;
                 $to = $user_email;
-                $subject = $reply_user_name . ' has reply on your comment';
+                $subject = $reply_user_name . ' has replied on your comment';
                 $body = 'Your Question : ' . $note_values . '.</br>' .
-                        $reply_user_name . ' Reply : ' . $text_content . '.</br>';
+                        $reply_user_name . ' replied : ' . $text_content . '.</br>';
                 $headers = array('Content-Type: text/html; charset=UTF-8');
                 $mail = wp_mail( $to, $subject, $body, $headers );
                 if($mail) {
@@ -1105,6 +1105,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         */
         public static function submenufunction(){
 
+            wp_enqueue_style( 'bootstrap_css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css', array(), time(), 'all' );
+
             if (isset($_POST['rich_text_editor'])){
                 $rich_text_editor = $_POST['rich_text_editor'];
                 update_option( 'rich_text_editor', $rich_text_editor);
@@ -1172,12 +1174,18 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $next_con = ($next_conv_allowed == 1) ? 'Yes' : 'No';
 
                 $to = $user_email;
+                // $to = 'ronymaha@gmail.com';
                 $subject = 'Congratulations Admin has replied to your comment.';
-                $body = 'Your Question : ' . $note_values . '.</br>' .
-                        'Admin Reply : ' . $note_reply . '.</br>' .
-                        'Next Conversation : ' . $next_con . '.</br>';
+                $body = '<p><strong>Your Question :</strong> ' . $note_values . '.</br></p>' .
+                        '<p><strong>Admin Reply :</strong> ' . $note_reply . '.</br></p>' .
+                        '<p>Next Conversation : ' . $next_con . '.</br></p>';
                 $headers = array('Content-Type: text/html; charset=UTF-8');
+
+
                 $mail = wp_mail( $to, $subject, $body, $headers );
+                // wp_mail( 'ronymaha@gmail.com', 'test mail from note', 'This is omar faruque',  $headers);
+                echo 'update: Omar <br/>';
+                echo 'Mail: ' . $mail . '<br/>'; 
                 if($mail) {
                     $error_massage = 'Mail to ' . $user_email . ' sent.</br>';
                 }else{
@@ -1242,8 +1250,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 </div>
 
                 <div id="all" class="tabcontent" style="display:block;" >
-
-                    <table class="sticky-notes-data-table jquerydatatable">
+                    <div class="table-responsive">
+                    <table class="table sticky-notes-data-table jquerydatatable">
                         <thead>
                             <tr class="note-heading-wrapper">
                                 <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
@@ -1314,6 +1322,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                         <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
                                                         <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
                                                         <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
+                                                        
                                                         <div class="next-conversation">
                                                             <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
                                                             <label class="switch">
@@ -1339,10 +1348,12 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                         <?php } ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 
                 <div id="approved" class="tabcontent">
-                    <table class="sticky-notes-data-table jquerydatatable">
+                    <div class="table-responsive">
+                    <table class="table sticky-notes-data-table jquerydatatable">
                         <thead>
                         <tr class="note-heading-wrapper">
                             <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
@@ -1436,11 +1447,12 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                         ?>
                         </tbody>
                     </table>
+                    </div>
 
                 </div>
                 <div id="disapproved" class="tabcontent">
-
-                    <table class="sticky-notes-data-table jquerydatatable">
+                    <div class="table-responsive">
+                    <table class="table sticky-notes-data-table jquerydatatable">
                     <thead>
                         <tr class="note-heading-wrapper">
                             <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
@@ -1534,14 +1546,15 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                         ?>
                         </tbody>
                     </table>
+                    </div>
 
                 </div>
                 
                 <div id="toppage" class="tabcontent">
                     <div class="wpssn-top-wap">
-                        <div class="top-ten-page"></div>
-                        <div class="top-ten-user"></div>
-                        <div class="top-ten-like-unlike"></div>
+                        <div class="top-ten-page mb-5" id="chartContainer"></div>
+                        <div id="topTenUser" class="top-ten-user mb-5 mt-5"></div>
+                        <div id="toptenLikeUnlike" class="top-ten-like-unlike"></div>
                     </div>
                 </div>
 
@@ -1550,7 +1563,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 <div id="settings" class="tabcontent">
                     <div class="settingsInner">
                         <form id="settingsForm" method="post" action="">
-                            <table class="sticky-notes-data-table">
+                            <div class="table-responsive">
+                            <table class="table sticky-notes-data-table">
                                 <tbody>
                                     <tr>
                                         <th class="text-left"><?php _e('Button position', 'wp_super_sticky_notes' ); ?></th>
@@ -1755,6 +1769,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </form>
                     </div>
                 </div>
