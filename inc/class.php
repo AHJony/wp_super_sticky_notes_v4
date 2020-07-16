@@ -848,6 +848,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             $current_Class = $_POST['currentClass'];
             $user_id = $_POST['user_id'];
             $text_content = $_POST['text_content'];
+            $text_content = str_replace('\"', '', $text_content);
             $title = $_POST['title'];
             $priv = $_POST['priv'];
             $next_conv_allowed = 0;
@@ -1105,7 +1106,9 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         */
         public static function submenufunction(){
 
-            wp_enqueue_style( 'bootstrap_css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css', array(), time(), 'all' );
+            // wp_enqueue_style( 'bootstrap_css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css', array(), time(), 'all' );
+            // wp_enqueue_script( 'bootstrap_js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js', array('jquery'), time(), true );
+            
 
             if (isset($_POST['rich_text_editor'])){
                 $rich_text_editor = $_POST['rich_text_editor'];
@@ -1269,14 +1272,21 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                             $qry = $this->wpdb->prepare("SELECT * FROM $table_name ssn WHERE ssn.`priv` != %d ORDER BY ssn.`insert_time` DESC", 1);
                             $all_valus_notes = $this->wpdb->get_results($qry, OBJECT);                   
                             $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
+
+                            
+                            
                             
                             ?>
 
                         <tbody>
-                        <?php foreach ($all_valus_notes as $note_values){ ?>
+                        <?php foreach ($all_valus_notes as $note_values){ 
+                            $note_values_note = $note_values['note_values'];
+                            ?>
                        <tr>
-                            <td><?php $author_obj = get_user_by('id', $note_values['user_id']); echo $author_obj->data->user_nicename; ?></td>
-                            <td><?php echo $note_values['note_values']; ?></td>
+                            <td><?php 
+                                $author_obj = get_user_by('id', $note_values['user_id']); 
+                                echo $author_obj->data->user_nicename; ?></td>
+                            <td><?php echo $note_values_note; ?></td>
                             <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
                             <td><?php echo $note_values['insert_time']; ?></td>
                             <td class="note-status-view">

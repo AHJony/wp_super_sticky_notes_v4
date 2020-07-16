@@ -642,3 +642,21 @@ a.canvasjs-chart-credit {
     float: none !important;
     display: block;
 }
+.table {
+  width: 100%;
+  margin-bottom: 1rem;
+  color: #212529;
+}
+.table td, .table th {
+  padding: .75rem;
+  vertical-align: top;
+  border-top: 1px solid #dee2e6;
+}
+.table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid #dee2e6;
+}
+table.sticky-notes-data-table iframe {
+  max-width: 200px;
+  max-height: 150px;
+}
