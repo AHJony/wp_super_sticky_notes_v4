@@ -1106,6 +1106,7 @@ span.wpssn_rchars {
 .bs-theme .mce-tinymce button {
     background-color: unset;
 }
+.wp-ssn-user-comment img,
 .wp-ssn-user-comment iframe {
     max-height: 170px;
 }
