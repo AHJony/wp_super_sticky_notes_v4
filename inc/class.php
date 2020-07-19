@@ -281,8 +281,12 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             wp_enqueue_style( 'fontawesomeCSS', 'https://use.fontawesome.com/releases/v5.4.1/css/all.css', array(), true, 'all' );
             wp_enqueue_style( 'larasoftNoteCSS', $this->plugin_url . 'asset/css/note_backend.css', array(), true, 'all' );
             
-            wp_enqueue_script( 'canvasJS', 'https://canvasjs.com/assets/script/jquery-1.11.1.min.js', array(), time(), true);
-            wp_enqueue_script( 'canvasminiJS', 'https://canvasjs.com/assets/script/jquery.canvasjs.min.js', array(), time(), true);
+            
+            wp_enqueue_script( 'amchartsjsCore', 'https://cdn.amcharts.com/lib/4/core.js', array(), time(), true);
+            wp_enqueue_script( 'amchartsjs', 'https://cdn.amcharts.com/lib/4/charts.js', array(), time(), true);
+            
+            wp_enqueue_script( 'amchartsjsAnimated', 'https://cdn.amcharts.com/lib/4/themes/animated.js', array(), time(), true);
+            
             wp_enqueue_script( 'dataTableJS', 'https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.js', array(), time(), true);
             wp_enqueue_script( 'larasoftNote', $this->plugin_url . 'asset/js/ls_note_backend.js', array(), true );
             //ajax
@@ -1562,9 +1566,22 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 
                 <div id="toppage" class="tabcontent">
                     <div class="wpssn-top-wap">
+                         <div class="chart-title">
+                            <h2 class="text-center mb-0"><?php _e('Top ten posts/pages that comments with numbers', 'sticky-note'); ?></h2>
+                         </div>
                         <div class="top-ten-page mb-5" id="chartContainer"></div>
+
+                        <div class="chart-title">
+                            <h2 class="text-center mb-0"><?php _e('Top ten users with highest comments', 'sticky-note'); ?></h2>
+                        </div>
                         <div id="topTenUser" class="top-ten-user mb-5 mt-5"></div>
+
+                        <div class="chart-title">
+                            <h2 class="text-center mb-0"><?php _e('Most liked and disliked comments', 'sticky-note'); ?></h2>
+                        </div>
+
                         <div id="toptenLikeUnlike" class="top-ten-like-unlike"></div>
+
                     </div>
                 </div>
 

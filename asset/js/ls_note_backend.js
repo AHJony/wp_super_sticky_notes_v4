@@ -100,30 +100,10 @@ window.onload = function () {
   for(var i in top_page_title){
       var newObject = {};
       newObject['label'] = top_page_title[i];
-      newObject['y'] = top_page_num_shoes[i];
+      newObject['number'] = top_page_num_shoes[i];
       top_page_datapoints.push(newObject);
   }
- 
-
-  var chart = new CanvasJS.Chart("chartContainer", {
-    animationEnabled: true,
-    title: {
-      text: "Top ten posts/pages that comments with numbers"              
-    },
-    data: [{
-      type: "pie",
-      startAngle: 240,
-      yValueFormatString: "##0.00\"%\"",
-      indexLabel: "{label} {y}",
-      dataPoints: top_page_datapoints
-    }]
-  });
-  chart.render();
-
-
-
-
-
+  
 
   var top_users_name = notesAjax.top_users_name;
   var top_users_comment = notesAjax.top_users_comment;
@@ -136,23 +116,6 @@ window.onload = function () {
   }
 
 
-
-  var toptenuserchart = new CanvasJS.Chart("topTenUser", {
-    animationEnabled: true,
-    title: {
-      text: "Top ten users with highest comments"              
-    },
-    data: [{
-      type: "pie",
-      startAngle: 240,
-      yValueFormatString: "##0.00\"%\"",
-      indexLabel: "{label} {y}",
-      dataPoints: top_users_datapoints
-    }]
-  });
-  toptenuserchart.render();
-
-
   var user_name = notesAjax.user_name;
   var user_comment = notesAjax.user_comment;
   var user_like_unlike = notesAjax.user_like_unlike;
@@ -163,25 +126,94 @@ window.onload = function () {
   var user_like_unlike1 = (typeof user_like_unlike[0] == 'undefined') ? '' : user_like_unlike[0];
   var user_like_unlike2 = (typeof user_like_unlike[1] == 'undefined') ? '' : user_like_unlike[1];
 
+  am4core.ready(function() {
+
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+    
+    // Create chart instance
+    var chart = am4core.create("chartContainer", am4charts.PieChart);
+    
+    // Add data
+    chart.data = top_page_datapoints;
+    
+    // Add and configure Series
+    var pieSeries = chart.series.push(new am4charts.PieSeries());
+    pieSeries.dataFields.value = "number";
+    pieSeries.dataFields.category = "label";
+    pieSeries.slices.template.stroke = am4core.color("#fff");
+    pieSeries.slices.template.strokeOpacity = 1;
+    
+    // This creates initial animation
+    pieSeries.hiddenState.properties.opacity = 1;
+    pieSeries.hiddenState.properties.endAngle = -90;
+    pieSeries.hiddenState.properties.startAngle = -90;
+    
+    chart.hiddenState.properties.radius = am4core.percent(0);
+    
+    
 
 
-  var toptenuserchartUnlike = new CanvasJS.Chart("toptenLikeUnlike", {
-    animationEnabled: true,
-    title: {
-      text: "Most liked and disliked comments"              
-    },
-    data: [{
-      type: "pie",
-      startAngle: 240,
-      yValueFormatString: "##0.00\"%\"",
-      indexLabel: "{label} {y}",
-      dataPoints: [
-        { label: user_name1, y: Number(user_like_unlike1) },
-        { label: user_name2, y: Number(user_like_unlike2) }
-      ]
-    }]
-  });
-  toptenuserchartUnlike.render();
+    // Create chart instance
+    var chart = am4core.create("topTenUser", am4charts.PieChart);
+    
+    // Add data
+    chart.data = top_users_datapoints;
+    
+    // Add and configure Series
+    var pieSeries = chart.series.push(new am4charts.PieSeries());
+    pieSeries.dataFields.value = "y";
+    pieSeries.dataFields.category = "label";
+    pieSeries.slices.template.stroke = am4core.color("#fff");
+    pieSeries.slices.template.strokeOpacity = 1;
+    
+    // This creates initial animation
+    pieSeries.hiddenState.properties.opacity = 1;
+    pieSeries.hiddenState.properties.endAngle = -90;
+    pieSeries.hiddenState.properties.startAngle = -90;
+    
+    chart.hiddenState.properties.radius = am4core.percent(0);
+
+
+
+
+    // Create chart for toptenLikeUnlike
+    var chart = am4core.create("toptenLikeUnlike", am4charts.PieChart);
+    
+    // Add data
+    chart.data = [
+      { label: user_name1, y: Number(user_like_unlike1) },
+      { label: user_name2, y: Number(user_like_unlike2) }
+    ];
+    
+    // Add and configure Series
+    var pieSeries = chart.series.push(new am4charts.PieSeries());
+    pieSeries.dataFields.value = "y";
+    pieSeries.dataFields.category = "label";
+    pieSeries.slices.template.stroke = am4core.color("#fff");
+    pieSeries.slices.template.strokeOpacity = 1;
+    
+    // This creates initial animation
+    pieSeries.hiddenState.properties.opacity = 1;
+    pieSeries.hiddenState.properties.endAngle = -90;
+    pieSeries.hiddenState.properties.startAngle = -90;
+    
+    chart.hiddenState.properties.radius = am4core.percent(0);
+    
+    
+    }); // end am4core.ready()
+
+
+
+  
+
+
+
+
+
+
+
 
 
 
