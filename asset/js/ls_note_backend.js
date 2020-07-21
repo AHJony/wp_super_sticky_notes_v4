@@ -181,6 +181,7 @@ window.onload = function () {
     // Create chart for toptenLikeUnlike
     var chart = am4core.create("toptenLikeUnlike", am4charts.PieChart);
     
+    
     // Add data
     chart.data = [
       { label: user_name1, y: Number(user_like_unlike1) },
