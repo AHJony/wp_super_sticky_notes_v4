@@ -285,6 +285,7 @@ jQuery(document).ready(function($){
 
         
         var current_page_id = notesAjax['current_page_id'];
+        var page_author_id = notesAjax['page_author_id'];
         var user_id = notesAjax['user_id'];
         var title = notesAjax['title'];
        
@@ -295,6 +296,7 @@ jQuery(document).ready(function($){
         var formdata = {
             'position'                : position,
             'current_page_id'         : current_page_id,
+            'page_author_id'          : page_author_id,
             'parentClass'             : parntclass,
             'user_id'                 : user_id,
             'text_content'            : text_content,

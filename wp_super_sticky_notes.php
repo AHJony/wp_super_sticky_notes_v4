@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Wp Super Sticky Notes
  * Plugin URI: http://larasoftbd.net/
- * Description: Wp Super Sticky Note version 3
- * Version: 3.0.1
+ * Description: Wp Super Sticky Note version 4
+ * Version: 4.0.1
  * Author: larasoft
  * Author URI: https://larasoftbd.net
  * Text Domain: wp_super_sticky_notes

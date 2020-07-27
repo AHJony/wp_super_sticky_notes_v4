@@ -86,12 +86,35 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             //avatar defaults
             add_filter( 'avatar_defaults', array( $this, 'mytheme_default_avatar' ), 102, 1 );
 
-            // add_action('wp_head', array($this, 'testFunction'));
+            add_action('wp_head', array($this, 'testFunction'));
 
         }
 
 
         public function testFunction(){
+
+            
+            echo 'jony : ';
+
+            
+            $user = wp_get_current_user();
+            $roles = ( array ) $user->roles;
+            echo 'user : ' . $role = $roles[0];
+            echo '</br>';
+            if ( $role == 'administrator' ){
+                add_menu_page( 'All Sticky Notes', 'All Sticky Notes', 'read', 'sticky-notes-admin-menu', array($this, 'submenufunction'), 'dashicons-list-view', 50 );
+            }
+            
+            $power_to_reply_ur_name = array();
+            if ( get_option( 'power_to_reply_ur_name') !== false ) {
+                $power_to_reply_ur_name = get_option( 'power_to_reply_ur_name');
+            }
+            $power_to_reply_ur_name = array_map('strtolower',$power_to_reply_ur_name);
+            $power_to_reply_ur_name = str_replace(' ', '_', $power_to_reply_ur_name);
+            echo '<pre>';
+            print_r($power_to_reply_ur_name);
+            echo '</pre>';
+
             if(isset($_GET['note'])){
                 echo 'omar get note';
             }else{
@@ -128,8 +151,19 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             if( is_user_logged_in() ) {
                 $user = wp_get_current_user();
                 $roles = ( array ) $user->roles;
-                if (in_array('administrator', $roles)){
-                    add_menu_page( 'All Sticky Notes', 'All Sticky Notes', 'manage_options', 'sticky-notes-menu', array($this, 'submenufunction'), 'dashicons-list-view', 50 );
+                $role = $roles[0];
+                if ( $role == 'administrator' ){
+                    add_menu_page( 'All Sticky Notes', 'All Sticky Notes', 'read', 'sticky-notes-admin-menu', array($this, 'submenufunction'), 'dashicons-list-view', 50 );
+                }
+                
+                $power_to_reply_ur_name = array();
+                if ( get_option( 'power_to_reply_ur_name') !== false ) {
+                    $power_to_reply_ur_name = get_option( 'power_to_reply_ur_name');
+                }
+                $power_to_reply_ur_name = array_map('strtolower',$power_to_reply_ur_name);
+                $power_to_reply_ur_name = str_replace(' ', '_', $power_to_reply_ur_name);
+                if( in_array( $role ,$power_to_reply_ur_name ) ){
+                    add_menu_page( 'Sticky Comments', 'Sticky Comments', 'read', 'sticky-notes-menu', array($this, 'powerreplyfunction'), 'dashicons-list-view', 50 );
                 }
             }
         }
@@ -151,14 +185,17 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             $restrict_ur_name = get_option( 'restrict_ur_name');
             }
             $restrict_ur_name = array_map('strtolower',$restrict_ur_name);
+            $restrict_ur_name = str_replace(' ', '_', $restrict_ur_name);
             $user = wp_get_current_user();
             $roles = ( array ) $user->roles;
             $role = $roles[0];
             if( in_array( $role ,$restrict_ur_name ) ){
                 return false;
             }
+            $href_admin = ( $role == 'administrator' ) ? '-admin-' : '-';
 
             $oldCommentUrl = get_the_permalink( get_option( 'allcommentpage', 1 ) );
+
             $wp_admin_bar->add_menu( array(
                 'id'        => 'admin_bar_custom_menu',
                 'title'     => '<span class="ab-icon"></span>'.__( 'Sticky Notes', 'some-textdomain' ),
@@ -177,11 +214,10 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 'title'     => __( 'Old Comments', 'some-textdomain' ),
                 'href'      => $oldCommentUrl
             ) );
-
             $wp_admin_bar->add_menu( array(
                 'id'        => 'admin_bar_custom_menu2',
                 'title'     => '<span class="ab-icon"></span>'.__( 'All Sticky Notes', 'some-textdomain' ),
-                'href'      => 'admin.php?page=sticky-notes-menu'
+                'href'      => 'admin.php?page=sticky-notes' . $href_admin . 'menu'
             ) );
 
         }
@@ -191,8 +227,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         * Appointment backend Script
         */
         function larasoftNote_backend_script($hook){
-            if($hook != 'toplevel_page_sticky-notes-menu') return false;
-
+            if( $hook != 'toplevel_page_sticky-notes-admin-menu' && $hook != 'toplevel_page_sticky-notes-menu' ) return false;
 
             global $wpdb;
             $table_name = $wpdb->prefix . 'super_sticky_notes';
@@ -330,7 +365,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             $current_user_id = get_current_user_id();
             $current_page_id = $post->ID;
             $current_page_url = get_permalink( $current_page_id );
-            
+            $page_author_id = get_post_field( 'post_author', $current_page_id );
 
             $status = (isset($_REQUEST['note']) && $_REQUEST['note'] == 1) ? 'active' : '';
 
@@ -393,6 +428,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             }
             $user_restrict_alert = '';
             $restrict_ur_name = array_map('strtolower',$restrict_ur_name);
+            $restrict_ur_name = str_replace(' ', '_', $restrict_ur_name);
 
             if ( is_user_logged_in() ){
                 $user = wp_get_current_user();
@@ -491,6 +527,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 array(
                     'ajax' => admin_url( 'admin-ajax.php' ),
                     'current_page_id' => $post->ID,
+                    'page_author_id' => $page_author_id,
                     'user_id' => $current_user_id,
                     'title' => get_the_title(),
                     'login_status' => (is_user_logged_in()) ? 'login':'logout',
@@ -545,6 +582,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 id INT(20) NOT NULL AUTO_INCREMENT,
                 user_id INT(20) NOT NULL,
                 page_id VARCHAR(200) NOT NULL,
+                page_author_id VARCHAR(200) NOT NULL,
                 parent_class VARCHAR(50) NOT NULL,
                 current_Class VARCHAR(50) NOT NULL,
                 note_position INT(20) NOT NULL,
@@ -837,6 +875,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $auto_approving_ur_name = get_option( 'auto_approving_ur_name');
             }
             $auto_approving_ur_name = array_map('strtolower',$auto_approving_ur_name);
+            $auto_approving_ur_name = str_replace(' ', '_', $auto_approving_ur_name);
             $user = wp_get_current_user();
             $roles = ( array ) $user->roles;
             $role = $roles[0];
@@ -848,6 +887,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             */
             $position = $_POST['position'];
             $current_page_id = $_POST['current_page_id'];
+            $page_author_id = $_POST['page_author_id'];
             $parentClass = $_POST['parentClass'];
             $current_Class = $_POST['currentClass'];
             $user_id = $_POST['user_id'];
@@ -876,11 +916,16 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                         $reply_user_name . ' replied : ' . $text_content . '.</br>';
                 $headers = array('Content-Type: text/html; charset=UTF-8');
                 $mail = wp_mail( $to, $subject, $body, $headers );
-                if($mail) {
-                    $error_massage = 'Mail to ' . $user_email . ' sent.</br>';
-                }else{
-                    $error_massage = 'Mail to ' . $username . ' not sent.</br>';
-                }
+            }
+
+            if($page_author_id != ''){
+                $page_author_info = get_userdata($page_author_id);
+                $page_author_email = $page_author_info->user_email;
+                $to = $page_author_email;
+                $subject = $reply_user_name . ' has comment on your page';
+                $body = $reply_user_name . ' comment : ' . $text_content . '.</br>';
+                $headers = array('Content-Type: text/html; charset=UTF-8');
+                $mail = wp_mail( $to, $subject, $body, $headers );
             }
 
             $j = 'no';
@@ -889,6 +934,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                     array(
                         'user_id' => $user_id,
                         'page_id' => $current_page_id,
+                        'page_author_id' => $page_author_id,
                         'parent_class' => $parentClass,
                         'current_Class' => $current_Class,
                         'note_position' => $position,
@@ -898,7 +944,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                         'priv' => $priv,
                         'note_status' => $status
                     ),
-                    array('%d', '%d', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s')
+                    array('%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s')
                 );
                 //insert data end
                 
@@ -1110,6 +1156,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         */
         public static function submenufunction(){
 
+
             // wp_enqueue_style( 'bootstrap_css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css', array(), time(), 'all' );
             // wp_enqueue_script( 'bootstrap_js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js', array('jquery'), time(), true );
             
@@ -1181,7 +1228,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $next_con = ($next_conv_allowed == 1) ? 'Yes' : 'No';
 
                 $to = $user_email;
-                // $to = 'ronymaha@gmail.com';
+
                 $subject = 'Congratulations Admin has replied to your comment.';
                 $body = '<p><strong>Your Question :</strong> ' . $note_values . '.</br></p>' .
                         '<p><strong>Admin Reply :</strong> ' . $note_reply . '.</br></p>' .
@@ -1190,14 +1237,6 @@ if (!class_exists('wp_super_sticky_notesClass')) {
 
 
                 $mail = wp_mail( $to, $subject, $body, $headers );
-                // wp_mail( 'ronymaha@gmail.com', 'test mail from note', 'This is omar faruque',  $headers);
-                echo 'update: Omar <br/>';
-                echo 'Mail: ' . $mail . '<br/>'; 
-                if($mail) {
-                    $error_massage = 'Mail to ' . $user_email . ' sent.</br>';
-                }else{
-                    $error_massage = 'Mail to ' . $username . ' not sent.</br>';
-                }
 
                 $table_name = $wpdb->prefix . 'super_sticky_notes';
                 $wpdb->update( $table_name,
@@ -1239,6 +1278,10 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             //submit restrict user roles name code 
             if(isset($_POST['restrict_ur_name'])  ){
                 update_option( 'restrict_ur_name', $_POST['restrict_ur_name'] );
+            }
+            //submit Allows roles for power to reply roles name code 
+            if(isset($_POST['power_to_reply_ur_name'])  ){
+                update_option( 'power_to_reply_ur_name', $_POST['power_to_reply_ur_name'] );
             }
 
             if(isset($_POST['allcommentpage'])) $this->updateSettings($_POST);
@@ -1632,7 +1675,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                         <td class="text-left">
                                             <?php 
                                             $post_ids = get_posts(array(
-                                                'post_type' => 'any', //Your arguments
+                                                'post_type'     => 'any', //Your arguments
                                                 'posts_per_page'=> -1,
                                                 'fields'        => 'ids', // Only get post IDs
                                             ));
@@ -1676,7 +1719,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                             <div class="wssn-ks-cb-div">
                                                 <ul class="ks-cboxtags">
                                                     <li>
-                                                        <input type="checkbox" class="wssn-hidden" name="auto_approving_ur_name[]" id="checkbox" value="checkbox" checked/>
+                                                        <input type="checkbox" class="wssn-hidden" name="auto_approving_ur_name[]" id="checkbox_auto_approving" value="checkbox" checked/>
                                                     </li>
                                                     <?php 
                                                     global $wp_roles;
@@ -1690,8 +1733,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                         $checked = ( in_array( $role ,$auto_approving_ur_name ) ) ? 'checked' : '';
                                                     ?>
                                                         <li>
-                                                            <input type="checkbox" name="auto_approving_ur_name[]" id="checkbox<?php echo $role ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
-                                                            <label for="checkbox<?php echo $role ?>"><?php echo $role ?></label>
+                                                            <input type="checkbox" name="auto_approving_ur_name[]" id="checkbox_auto_approving_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <label for="checkbox_auto_approving_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
                                                         </li>
                                                     <?php } ?>
                                                 </ul>
@@ -1705,7 +1748,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                             <div class="wssn-ks-cb-div">
                                                 <ul class="ks-cboxtags">
                                                     <li>
-                                                        <input type="checkbox" class="wssn-hidden" name="restrict_ur_name[]" id="checkboxx" value="checkbox" checked/>
+                                                        <input type="checkbox" class="wssn-hidden" name="restrict_ur_name[]" id="checkbox_restrict_comments" value="checkbox" checked/>
                                                     </li>
                                                     <?php 
                                                     global $wp_roles;
@@ -1720,8 +1763,37 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                         
                                                     ?>
                                                         <li>
-                                                            <input type="checkbox" name="restrict_ur_name[]" id="checkboxx<?php echo $role ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
-                                                            <label for="checkboxx<?php echo $role ?>"><?php echo $role ?></label>
+                                                            <input type="checkbox" name="restrict_ur_name[]" id="checkbox_restrict_comments_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <label for="checkbox_restrict_comments_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
+                                                        </li>
+                                                    <?php } ?>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- Admin can allows roles for power to reply to only one or several roles  automatically -->
+                                    <tr>
+                                        <th class="text-left"><?php _e('Allows roles for power to reply', 'wp_super_sticky_notes' ); ?></th>
+                                        <td class="text-left">
+                                            <div class="wssn-ks-cb-div">
+                                                <ul class="ks-cboxtags">
+                                                    <li>
+                                                        <input type="checkbox" class="wssn-hidden" name="power_to_reply_ur_name[]" id="checkbox_power_to_reply" value="checkbox" checked/>
+                                                    </li>
+                                                    <?php 
+                                                    $roles = array( 'Author', 'Contributor', 'Tutor Instructor', 'Teacher' );
+                                                    $power_to_reply_ur_name = array();
+                                                    if ( get_option( 'power_to_reply_ur_name' ) !== false ) {
+                                                        $power_to_reply_ur_name = get_option( 'power_to_reply_ur_name');
+                                                    }
+                                                    foreach($roles as $role) {
+
+                                                        $checked = ( in_array( $role ,$power_to_reply_ur_name ) ) ? 'checked' : '';
+                                                        
+                                                    ?>
+                                                        <li>
+                                                            <input type="checkbox" name="power_to_reply_ur_name[]" id="checkbox_power_to_reply_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <label for="checkbox_power_to_reply_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
                                                         </li>
                                                     <?php } ?>
                                                 </ul>
@@ -1831,6 +1903,169 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             <?php
         } // Admin page
 
+        //Power to reply function page
+        function powerreplyfunction(){
+           
+            global $wpdb;
+
+            if (isset($_POST['status_message']))
+            {
+                $status = $_POST['status'];
+                $status_id = $_POST['status_message'];
+
+                $table_name = $wpdb->prefix . 'super_sticky_notes';
+                if($status == 'delete'){
+                    $delete = $this->wpdb->delete(
+                        $table_name,
+                        array('id' => $status_id),
+                        array('%d')        
+                    );
+                }else{
+                    $wpdb->update( $table_name,
+                    array(
+                            'note_status' => $status
+                        ),
+                    array(
+                        'id'=> $status_id
+                    ),
+                    array('%s'),
+                    array('%d')
+                    );
+                }
+            }
+            if (isset($_POST['note_reply_ids']))
+            {
+                $status_ids = $_POST['note_reply_ids'];
+                $note_reply = $_POST['note_reply_text'];
+                $next_conv_allowed = $_POST['next_conv_allowed'];
+                $note_repliedOn_date = date("Y-m-d");
+
+                $table_name = $wpdb->prefix . 'super_sticky_notes';
+                $user_id_and_user_note = $this->wpdb->get_results( "SELECT `user_id`, `note_values` FROM $table_name WHERE `id` = $status_ids ", OBJECT);
+                $user_id_and_user_note = json_decode(json_encode($user_id_and_user_note), true);
+                $note_user_id = $user_id_and_user_note[0]['user_id'];
+                $note_values = $user_id_and_user_note[0]['note_values'];
+                $user_info = get_userdata($note_user_id);
+                $user_email = $user_info->user_email;
+                $next_con = ($next_conv_allowed == 1) ? 'Yes' : 'No';
+
+                $to = $user_email;
+
+                $subject = 'Congratulations Admin has replied to your comment.';
+                $body = '<p><strong>Your Question :</strong> ' . $note_values . '.</br></p>' .
+                        '<p><strong>Admin Reply :</strong> ' . $note_reply . '.</br></p>' .
+                        '<p>Next Conversation : ' . $next_con . '.</br></p>';
+                $headers = array('Content-Type: text/html; charset=UTF-8');
+
+
+                $mail = wp_mail( $to, $subject, $body, $headers );
+
+                $table_name = $wpdb->prefix . 'super_sticky_notes';
+                $wpdb->update( $table_name,
+                array(
+                        'note_reply' => $note_reply,
+                        'next_conv_allowed' => $next_conv_allowed,
+                        'note_repliedOn' => $note_repliedOn_date
+                    ),
+                array(
+                    'id'=> $status_ids
+                ),
+                array('%s', '%d', '%s'),
+                array('%d')
+                );
+            }
+
+            ?>
+            <div class="super-sticky-notes">
+                <div class="sticky-setting-title"><div class=setting-icon><h1><?php _e('Comments Table', 'wp_super_sticky_notes'); ?></h1></div></div>
+                <div id="all" class="tabcontent" style="display:block;" >
+                    <div class="table-responsive">
+                    <table class="table sticky-notes-data-table jquerydatatable">
+                        <thead>
+                            <tr class="note-heading-wrapper">
+                                <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
+                            </tr>
+                        </thead>
+                        <?php
+                            $current_user_id = get_current_user_id();
+                            $table_name = $wpdb->prefix . 'super_sticky_notes';
+                            $qry = $this->wpdb->prepare("SELECT * FROM $table_name ssn WHERE ssn.`priv` != %d AND ssn.`page_author_id` = $current_user_id ORDER BY ssn.`insert_time` DESC", 1);
+                            $all_valus_notes = $this->wpdb->get_results($qry, OBJECT);                   
+                            $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
+
+                            ?>
+
+                        <tbody>
+                        <?php foreach ($all_valus_notes as $note_values){ 
+                            $note_values_note = $note_values['note_values'];
+                            ?>
+                       <tr>
+                            <td><?php 
+                                $author_obj = get_user_by('id', $note_values['user_id']); 
+                                echo $author_obj->data->user_nicename; ?></td>
+                            <td><?php echo $note_values_note; ?></td>
+                            <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
+                            <td><?php echo $note_values['insert_time']; ?></td>
+                            <td>
+                                <?php if($note_values['note_status'] == 'Disapproved'){?>
+                                    <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
+                                <?php }else{
+                                        $current_id = $note_values['id'];
+                                    ?>
+                                    <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
+                                        <div class="modal-overlay">
+                                        <div class="modal">
+                                            <a class="close-modal">
+                                            <svg viewBox="0 0 20 20">
+                                                <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+                                            </svg>
+                                            </a>
+                                            <div class="modal-content">
+
+                                                <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
+                                                <div class="note-reply-page">
+                                                    <form method="POST">
+                                                        <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
+                                                        <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
+                                                        <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
+                                                        
+                                                        <div class="next-conversation">
+                                                            <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
+                                                            <label class="switch">
+                                                                <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
+                                                                <input type="hidden" name="next_conv_allowed" value="0" />
+                                                                <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
+                                                                <span class="slider round"></span>
+                                                            </label>
+                                                            <!-- <p class="checked-message"></p> -->
+                                                        </div>
+                                                        <input type="submit" class="note-reply" value="Reply">
+                                                    </form>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                        </div>
+                                <?php }?>  
+                            </td>
+                            <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
+                            <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
+                        </tr>
+                        <?php } ?>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+            <?php
+        }
+
         /**
          * its append add shortcode line 68
          * User question lists. user can see his all notes
@@ -1862,6 +2097,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $restrict_ur_name = get_option( 'restrict_ur_name');
             }
             $restrict_ur_name = array_map('strtolower',$restrict_ur_name);
+            $restrict_ur_name = str_replace(' ', '_', $restrict_ur_name);
             $user = wp_get_current_user();
             $roles = ( array ) $user->roles;
             $role = $roles[0];
