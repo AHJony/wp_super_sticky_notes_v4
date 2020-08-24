@@ -1,3 +1,4 @@
+localStorage.removeItem("sticky_comment");
 var addQtip = function(element){
     element.addClass('OmarAddClass');
     var parntclass = element.closest('sub').data('parent');
@@ -52,8 +53,9 @@ var addQtip = function(element){
             // console.log(userComments);
             var adminUnlikes = (typeof notesAjax.comment_admin_unlike[notesAjax.notes[single_id].id] != 'undefined') ? notesAjax.comment_admin_unlike[notesAjax.notes[single_id].id] : '0';
             var commentUserUnlike = (typeof notesAjax.comment_user_unlike[notesAjax.notes[single_id].id] != 'undefined') ? notesAjax.comment_user_unlike[notesAjax.notes[single_id].id] : '0';
+            // var admin_name = (notesAjax.notes[single_id].note_reply_admin_role == 'administrator') ? 'Admin' : 'Teacher';
             yourcomment += ( notesAjax.notes[single_id].note_values != '' && notesAjax.notes[single_id].priv == 0) ? '<div class="your-comment" style="background-color:'+notesAjax.notetextbg+'"><div class="wp-ssn-user-avater"><img src="'+notesAjax.note_user_avatar_url[notesAjax.notes[single_id].user_id]+'" /></div><div class="wp-ssn-user-comment"><strong>'+notesAjax.notes[single_id].user_nicename+' wrote on '+notesAjax.notes[single_id].insert_time+' :</strong> '+notesAjax.notes[single_id].note_values+'</div><div data-id="'+notesAjax.notes[single_id].id+'" data-reply="user" data-like="'+notesAjax.comment_user_like[notesAjax.notes[single_id].id]+'" data-unlike="'+notesAjax.comment_user_unlike[notesAjax.notes[single_id].id]+'" class="wp-ssn-user-comment-like"><ul class="wp-ssn-user-comment-like"><li><div class="wp-ssn-user-like '+user_active_like+'"></div><div class="wp-ssn-user-like-cunter '+top_user_like+'" >'+userComments+'</div></li><li><div class="wp-ssn-user-unlike '+user_active_unlike+'"></div><div class="wp-ssn-user-unlike-cunter '+top_user_unlike+'" >'+commentUserUnlike+'</div></li></ul></div></div>' : '';
-            yourcomment += ( notesAjax.notes[single_id].note_reply != '' ) ? '<div class="admin-reply" style="background-color:'+notesAjax.notetextbg+'"><div class="wp-ssn-user-avater"><img src="'+notesAjax.note_admin_avatar_url+'" /></div><div class="wp-ssn-user-comment"><strong>Admin reply on '+notesAjax.notes[single_id].note_repliedOn+' :</strong> '+notesAjax.notes[single_id].note_reply+'</div><div data-id="'+notesAjax.notes[single_id].id+'" data-reply="admin" data-like="'+notesAjax.comment_admin_like[notesAjax.notes[single_id].id]+'" data-unlike="'+notesAjax.comment_admin_unlike[notesAjax.notes[single_id].id]+'" class="wp-ssn-user-comment-like"><ul class="wp-ssn-user-comment-like"><li><div class="wp-ssn-user-like  '+admin_active_like+'"></div><div class="wp-ssn-user-like-cunter '+top_admin_like+'" >'+notesAjax.comment_admin_like[notesAjax.notes[single_id].id]+'</div></li><li><div class="wp-ssn-user-unlike  '+admin_active_unlike+'"></div><div class="wp-ssn-user-unlike-cunter '+top_admin_unlike+'" >'+adminUnlikes+'</div></li></ul></div></div>' : '';
+            yourcomment += ( notesAjax.notes[single_id].note_reply != '' ) ? '<div class="admin-reply" style="background-color:'+notesAjax.notetextbg+'"><div class="wp-ssn-user-avater"><img src="'+notesAjax.note_reply_admin_avatar_url[single_id]+'" /></div><div class="wp-ssn-user-comment"><strong>'+notesAjax.note_admin_name[single_id]+' reply on '+notesAjax.notes[single_id].note_repliedOn+' :</strong> '+notesAjax.notes[single_id].note_reply+'</div><div data-id="'+notesAjax.notes[single_id].id+'" data-reply="admin" data-like="'+notesAjax.comment_admin_like[notesAjax.notes[single_id].id]+'" data-unlike="'+notesAjax.comment_admin_unlike[notesAjax.notes[single_id].id]+'" class="wp-ssn-user-comment-like"><ul class="wp-ssn-user-comment-like"><li><div class="wp-ssn-user-like  '+admin_active_like+'"></div><div class="wp-ssn-user-like-cunter '+top_admin_like+'" >'+notesAjax.comment_admin_like[notesAjax.notes[single_id].id]+'</div></li><li><div class="wp-ssn-user-unlike  '+admin_active_unlike+'"></div><div class="wp-ssn-user-unlike-cunter '+top_admin_unlike+'" >'+adminUnlikes+'</div></li></ul></div></div>' : '';
             yourcomment += ( notesAjax.notes[single_id].priv == 1 ) ? '<div class="user-priv" style="background-color:'+notesAjax.notetextbg+'"><strong>Private Note on '+notesAjax.notes[single_id].insert_time+' :</strong> '+notesAjax.notes[single_id].note_values+'</div>' : '';
             if(notesAjax.notes[single_id].user_id == notesAjax.user_id && notesAjax.notes[single_id].priv == 0) current_user_data = single_id;
         }
@@ -95,10 +97,10 @@ var addQtip = function(element){
                         text+='<div style="background-color:'+notesAjax.notetextbg+'" class="login_alert active"><div class="alert_inside">'+notesAjax.restrict_alert+'</div></div>';
                     }else{
                         if(submitorreply !=''){
-                            if(notesAjax.private_comment == 1){
+                            // if(notesAjax.private_comment == 1){
                                 text+='<textarea name="textarea" style="background-color:'+notesAjax.notetextbg+'" id="sticky_note_text_editor" class="sticky-note-text-editor" placeholder="Ask Questions.."></textarea>';
                                 
-                            }
+                            // }
                         }
                     }
                 }else{

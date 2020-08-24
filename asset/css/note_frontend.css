@@ -831,6 +831,7 @@ ul.user-button-ul {
 }
 span.userHideSticky img{
     margin-top: -9px;
+    vertical-align: middle;
 }
 li.note-new-comment {
     cursor: pointer;
@@ -870,13 +871,28 @@ li.note-old-comments {
     height: 60px;
     width: 60px;
 }
+.innericon img {
+    position: unset;
+}
 .sticky_note-user-button.top_left{
     left: 0;
     top: 5%;
+    border-radius: 0px 100px 100px 0px;
+}
+.sticky_note-user-button.top_left div#stickeyItems{
+    top: 0;
+    right: auto;
+    left: 0;
 }
 .sticky_note-user-button.top_middle{
-    right: 0;
+    right: 50%;
+    top: 0;
+    border-radius: 0px 0px 100px 100px;
+}
+.admin-bar .sticky_note-user-button.top_middle{
+    right: 50%;
     top: 5%;
+    border-radius: 0px 0px 100px 100px;
 }.sticky_note-user-button.top_right{
     right: 0%;
     top: 5%;
@@ -907,9 +923,12 @@ li.note-old-comments {
 
 .sticky_note-user-button.bottom_middle{
     left: 50%;
-    bottom: 5%;
+    bottom: 0;
+    border-radius: 100px 100px 0px 0px;
 }
-
+.sticky_note-user-button.bottom_middle div#stickeyItems{
+    top: -10px;
+}
 .sticky_note-user-button.bottom_right{
     right: 0;
     bottom: 5%;
@@ -924,6 +943,7 @@ li.note-old-comments {
 div#stickeyItems {
     position: absolute;
     right: 0;
+    top: 0;
     min-width: 130px;
     background-color: #fff;
     border-radius: 3px;

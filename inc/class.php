@@ -30,7 +30,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
 
             return self::$instance;
         }
-        private function init(){
+        public function init(){
 
             //Backend Script
             add_action( 'admin_enqueue_scripts', array($this, 'larasoftNote_backend_script') );
@@ -38,10 +38,13 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             add_action( 'wp_enqueue_scripts', array($this, 'larasoftbd_Note_frontend_script') );
 
             //Add Menu Options
-            add_action('admin_menu', array($this, 'sticky_notes_admin_menu_function'));
+            add_action('admin_menu', array($this, 'sticky_notes_admin_menu_function'), 9999);
 
             /* Add Theme Options to Admin Bar */ 
             add_action('admin_bar_menu', array($this, 'sticky_notes_admin_bar_menu_function'), 55);
+            // learndash submenus
+            // add_filter('learndash_submenu', array($this, 'irAddSubmenuItem'), 250);
+            // add_filter('learndash_header_data', array($this, 'admin_header'), 45, 3);
 
             /* Send item field */ 
             add_action('wp_ajax_nopriv_sendtonotesajax', array($this, 'sendtonotesajax'));
@@ -86,24 +89,45 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             //avatar defaults
             add_filter( 'avatar_defaults', array( $this, 'mytheme_default_avatar' ), 102, 1 );
 
-            add_action('wp_head', array($this, 'testFunction'));
+            // add_action('wp_head', array($this, 'testFunction'));
 
         }
 
 
         public function testFunction(){
 
-            
-            echo 'jony : ';
+            global $wp_roles;
+
 
             
             $user = wp_get_current_user();
             $roles = ( array ) $user->roles;
             echo 'user : ' . $role = $roles[0];
             echo '</br>';
-            if ( $role == 'administrator' ){
-                add_menu_page( 'All Sticky Notes', 'All Sticky Notes', 'read', 'sticky-notes-admin-menu', array($this, 'submenufunction'), 'dashicons-list-view', 50 );
+
+
+            
+            global $wp_roles;
+            $roles = $wp_roles->get_names();
+            foreach($roles as $key => $role) {
+                echo 'key : ' . $key . '.   value : ' .$role . '</br>';
             }
+
+            // $user_data = get_userdata($user);
+            // $user_role_slug = $user_data->roles[0];
+            // echo $user_role_name = translate_user_role($wp_roles->roles[$user_role_slug]['name']);
+            // echo '</br>';
+
+
+
+            
+            global $wp_roles;
+
+            $all_roles = $wp_roles->roles;
+            echo 'jony : ';
+            echo '<pre>';
+            print_r($all_roles);
+            echo '</pre>';
             
             $power_to_reply_ur_name = array();
             if ( get_option( 'power_to_reply_ur_name') !== false ) {
@@ -114,11 +138,21 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             echo '<pre>';
             print_r($power_to_reply_ur_name);
             echo '</pre>';
+        }
 
-            if(isset($_GET['note'])){
-                echo 'omar get note';
-            }else{
-                echo 'Omar Note not get';
+        function add_menu_pages(){
+
+            $user_meta = get_userdata(get_current_user_id());
+            $user_roles = $user_meta->roles;
+        
+            if( $user_roles[0] == 'wdm_instructor' )
+            {
+                add_role('wdm_instructor', __(
+                    'Instructor'),
+                    array(
+                        'read'            => true, // Allows a user to read
+                        )
+                 );
             }
         }
 
@@ -162,11 +196,58 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 }
                 $power_to_reply_ur_name = array_map('strtolower',$power_to_reply_ur_name);
                 $power_to_reply_ur_name = str_replace(' ', '_', $power_to_reply_ur_name);
+
                 if( in_array( $role ,$power_to_reply_ur_name ) ){
                     add_menu_page( 'Sticky Comments', 'Sticky Comments', 'read', 'sticky-notes-menu', array($this, 'powerreplyfunction'), 'dashicons-list-view', 50 );
                 }
             }
         }
+
+		/**
+		 * Control visibility of submenu items
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param array $submenu Submenu item to check.
+		 * @return array $submenu
+		 */
+		public function irAddSubmenuItem( $submenu ) {
+			if (! isset($submenu['sticky-notes-menu'])) {
+				$submenu_save = $submenu;
+				$submenu      = array();
+
+				$submenu['sticky-notes-menu'] = array(
+					'name'  => 'Sticky Comments',
+					'cap'   => 'read',
+					'link'  => 'admin.php?page=sticky-notes-menu',
+					'class' => 'submenu-sticky-notes-overview',
+				);
+
+				$submenu = array_merge($submenu, $submenu_save);
+			}
+
+			return $submenu;
+		}
+
+		/**
+		 * Filter the admin header data. We don't want to show the header panel on the Overview page.
+		 *
+		 * @since 3.0
+		 * @param array $header_data Array of header data used by the Header Panel React app.
+		 * @param string $menu_key The menu key being displayed.
+		 * @param array $menu_items Array of menu/tab items.
+		 *
+		 * @return array $header_data.
+		 */
+		public function admin_header( $header_data = array(), $menu_key = '', $menu_items = array() ) {
+			// Clear out $header_data if we are showing our page.
+			if ( $menu_key === 'admin.php?page=sticky-notes-menu' ) {
+				$header_data = array();
+			}
+
+			return $header_data;
+		}
+
 
         // its append add action line 44
         // Add Theme Options to Admin Bar Menu
@@ -389,7 +470,12 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             $note_user = array();
             $notes = array();
             $note_user_avatar_url = array();
+
+            $note_admin_name = array();
+            $note_reply_admin_avatar_url = array();
+
             foreach($note_values as $single){
+
                
                 $user = get_user_by('id', $single->user_id);
                 $next_conv_alloweds[$single->id] = $single->next_conv_allowed;
@@ -398,6 +484,11 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $note_user[$single->id] = $user->user_nicename;
                 $notes[$single->id] = $single;
                 $note_user_avatar_url[$single->user_id] = esc_url( get_avatar_url( $single->user_id ) );
+
+                $admin_user = get_user_by('id', $single->note_reply_admin_role);
+
+                $note_admin_name[$single->id] = ( $admin_user->roles[0] == 'administrator') ? 'Admin' : $admin_user->user_nicename;
+                $note_reply_admin_avatar_url[$single->id] = esc_url( get_avatar_url( $single->note_reply_admin_role ) );
             }
 
             $note_admin_avatar_url = '';
@@ -562,6 +653,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                     'top_admin_like_id' => $top_admin_like_id,
                     'top_admin_unlike_id' => $top_admin_unlike_id,
                     'rich_text_editor' => $rich_text_editor,
+                    'note_admin_name' => $note_admin_name,
+                    'note_reply_admin_avatar_url' => $note_reply_admin_avatar_url,
                 )
             );
             
@@ -572,12 +665,11 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         // all note and our all data save this db.
         function notes_save_create_db() {
 
-            // $sql = 'DROP TABLE IF EXISTS $this->super_sticky_notes_tbl';
-            // $this->wpdb->query($sql);
-
             $charset_collate = $this->wpdb->get_charset_collate();
 
             $note_table = $this->super_sticky_notes_tbl;
+            // $this->wpdb->query("DROP TABLE $note_table");
+
             $sql = "CREATE TABLE $note_table ( 
                 id INT(20) NOT NULL AUTO_INCREMENT,
                 user_id INT(20) NOT NULL,
@@ -590,6 +682,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 insert_time DATETIME DEFAULT CURRENT_TIMESTAMP,
                 title VARCHAR(100) NOT NULL, 
                 note_status VARCHAR(20) NOT NULL,
+                note_reply_admin_role INT(20) NOT NULL,
                 note_reply TEXT NOT NULL,
                 note_repliedOn VARCHAR(20) NOT NULL,
                 next_conv_allowed INT(5) NOT NULL,
@@ -1156,6 +1249,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
         */
         public static function submenufunction(){
 
+            
+            echo $plugin_settings = get_option('eat_admin_theme_settings');
 
             // wp_enqueue_style( 'bootstrap_css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css', array(), time(), 'all' );
             // wp_enqueue_script( 'bootstrap_js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js', array('jquery'), time(), true );
@@ -1214,6 +1309,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             if (isset($_POST['note_reply_ids']))
             {
                 $status_ids = $_POST['note_reply_ids'];
+                $note_reply_admin_role = $_POST['note_reply_admin_role'];
                 $note_reply = $_POST['note_reply_text'];
                 $next_conv_allowed = $_POST['next_conv_allowed'];
                 $note_repliedOn_date = date("Y-m-d");
@@ -1241,6 +1337,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $table_name = $wpdb->prefix . 'super_sticky_notes';
                 $wpdb->update( $table_name,
                 array(
+                        'note_reply_admin_role' => $note_reply_admin_role,
                         'note_reply' => $note_reply,
                         'next_conv_allowed' => $next_conv_allowed,
                         'note_repliedOn' => $note_repliedOn_date
@@ -1248,8 +1345,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 array(
                     'id'=> $status_ids
                 ),
-                array('%s', '%d', '%s'),
-                array('%d')
+                array( '%d', '%s', '%d', '%s' ),
+                array( '%d' )
                 );
             }
             if (isset($_POST['visitor_allowed']))
@@ -1301,308 +1398,311 @@ if (!class_exists('wp_super_sticky_notesClass')) {
 
                 <div id="all" class="tabcontent" style="display:block;" >
                     <div class="table-responsive">
-                    <table class="table sticky-notes-data-table jquerydatatable">
+                        <table class="table sticky-notes-data-table jquerydatatable">
+                            <thead>
+                                <tr class="note-heading-wrapper">
+                                    <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('Status', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
+                                    <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
+                                </tr>
+                            </thead>
+                            <?php
+                                $table_name = $wpdb->prefix . 'super_sticky_notes';
+                                $qry = $this->wpdb->prepare("SELECT * FROM $table_name ssn WHERE ssn.`priv` != %d ORDER BY ssn.`insert_time` DESC", 1);
+                                $all_valus_notes = $this->wpdb->get_results($qry, OBJECT);                   
+                                $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
+
+                                
+                                
+                                
+                                ?>
+
+                            <tbody>
+                            <?php foreach ($all_valus_notes as $note_values){ 
+                                $note_values_note = $note_values['note_values'];
+                                ?>
+                        <tr>
+                                <td><?php 
+                                    $author_obj = get_user_by('id', $note_values['user_id']); 
+                                    echo $author_obj->data->user_nicename; ?></td>
+                                <td><?php echo $note_values_note; ?></td>
+                                <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
+                                <td><?php echo $note_values['insert_time']; ?></td>
+                                <td class="note-status-view">
+                                    <?php if($note_values['note_status'] == ''){?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="approved" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
+                                            <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <span class="approved"><?php _e('Approved', 'wp_supper_sticky'); ?></span>
+                                            <button class="disapprovedd" value="delete" name="status"><?php _e('Delete', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <span class="disapprovedd"><?php _e('Disapproved', 'wp_supper_sticky'); ?></span>
+                                            <button class="disapprovedd" value="delete" name="status"><?php _e('Delete', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }?> 
+                                </td>
+                                <td>
+                                    <?php if($note_values['note_status'] == 'Disapproved'){?>
+                                        <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
+                                    <?php }else{
+                                            $current_id = $note_values['id'];
+                                        ?>
+                                        <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
+                                            <div class="modal-overlay">
+                                            <div class="modal">
+                                                <a class="close-modal">
+                                                <svg viewBox="0 0 20 20">
+                                                    <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+                                                </svg>
+                                                </a>
+                                                <div class="modal-content">
+
+                                                    <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
+                                                    <div class="note-reply-page">
+                                                        <form method="POST">
+                                                            <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
+                                                            <input type="hidden" name="note_reply_admin_role" value="<?php echo get_current_user_id(); ?>" />
+                                                            <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
+                                                            <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
+                                                            
+                                                            <div class="next-conversation">
+                                                                <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
+                                                                <label class="switch">
+                                                                    <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
+                                                                    <input type="hidden" name="next_conv_allowed" value="0" />
+                                                                    <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
+                                                                    <span class="slider round"></span>
+                                                                </label>
+                                                                <!-- <p class="checked-message"></p> -->
+                                                            </div>
+                                                            <input type="submit" class="note-reply" value="Reply">
+                                                        </form>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            </div>
+                                    <?php }?>  
+                                </td>
+                                <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
+                                <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
+                            </tr>
+                            <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="approved" class="tabcontent">
+                    <div class="table-responsive">
+                        <table class="table sticky-notes-data-table jquerydatatable">
+                            <thead>
+                            <tr class="note-heading-wrapper">
+                                <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Disapprove Comment', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                                $table_name = $this->wpdb->prefix . 'super_sticky_notes';
+                                $qry = $this->wpdb->prepare("SELECT * FROM $table_name WHERE `note_status` = %s", 'Approved');
+                                $all_valus_notes = $wpdb->get_results($qry, OBJECT);                   
+                                $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
+                                
+                                foreach ($all_valus_notes as $note_values){
+                            ?>
+                            <tr>
+                                <td><?php $author_obj = get_user_by('id', $note_values['user_id']); echo $author_obj->data->user_nicename; ?></td>
+                                <td><?php echo $note_values['note_values']; ?></td>
+                                <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
+                                <td><?php echo $note_values['insert_time']; ?></td>
+                                <td class="note-status-view">
+                                    <?php if($note_values['note_status'] == ''){?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="approved" value="Approved" name="status"><?php _e('Approved', 'wp_super_sticky_notes'); ?></button>
+                                            <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="disapprovedd" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="approvedd" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }?> 
+                                </td>
+                                <td>
+                                    <?php if($note_values['note_status'] == 'Disapproved'){?>
+                                        <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
+                                    <?php }else{
+                                        $current_id = $note_values['id'];
+                                        ?>
+                                        <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
+                                            <div class="modal-overlay">
+                                            <div class="modal">
+                                                <a class="close-modal">
+                                                <svg viewBox="0 0 20 20">
+                                                    <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+                                                </svg>
+                                                </a>
+                                                <div class="modal-content">
+
+                                                    <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
+                                                    <div class="note-reply-page">
+                                                        <form method="POST">
+                                                            <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
+                                                            <input type="hidden" name="note_reply_admin_role" value="<?php echo get_current_user_id(); ?>" />
+                                                            <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
+                                                            <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
+                                                            <div class="next-conversation">
+                                                                <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
+                                                                <label class="switch">
+                                                                    <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
+                                                                    <input type="hidden" name="next_conv_allowed" value="0" />
+                                                                    <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
+                                                                    <span class="slider round"></span>
+                                                                </label>
+                                                            </div>
+                                                            <input type="submit" class="note-reply" value="Reply">
+                                                        </form>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            </div>
+                                    <?php }?>  
+                                </td>
+                                <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
+                                <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
+                            </tr>
+                            <?php
+                                }
+                            ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+                <div id="disapproved" class="tabcontent">
+                    <div class="table-responsive">
+                        <table class="table sticky-notes-data-table jquerydatatable">
                         <thead>
                             <tr class="note-heading-wrapper">
                                 <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
-                                <th><?php _e('Status', 'wp_super_sticky_notes'); ?></th>
+                                <th><?php _e('Approve Comment', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
                                 <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
                             </tr>
-                        </thead>
-                        <?php
-                            $table_name = $wpdb->prefix . 'super_sticky_notes';
-                            $qry = $this->wpdb->prepare("SELECT * FROM $table_name ssn WHERE ssn.`priv` != %d ORDER BY ssn.`insert_time` DESC", 1);
-                            $all_valus_notes = $this->wpdb->get_results($qry, OBJECT);                   
-                            $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
-
-                            
-                            
-                            
+                            </thead>
+                            <tbody>
+                            <?php
+                                $table_name = $this->super_sticky_notes_tbl;
+                                $ary = $this->wpdb->prepare("SELECT * FROM $table_name WHERE `note_status` = %s", 'Disapproved');
+                                $all_valus_notes = $this->wpdb->get_results($ary, OBJECT);                   
+                                $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
+                                
+                                foreach ($all_valus_notes as $note_values){
                             ?>
+                            <tr>
+                                <td><?php $author_obj = get_user_by('id', $note_values['user_id']); echo $author_obj->data->user_nicename; ?></td>
+                                <td><?php echo $note_values['note_values']; ?></td>
+                                <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
+                                <td><?php echo $note_values['insert_time']; ?></td>
+                                <td class="note-status-view">
+                                    <?php if($note_values['note_status'] == ''){?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="approved" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
+                                            <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="disapprovedd" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
+                                        <form method="POST">
+                                            <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
+                                            <button class="approvedd" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
+                                        </form>
+                                    <?php }?> 
+                                </td>
+                                <td>
+                                    <?php if($note_values['note_status'] == 'Disapproved'){?>
+                                        <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
+                                    <?php }else{
+                                            $current_id = $note_values['id'];
+                                        ?>
+                                        <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
+                                            <div class="modal-overlay">
+                                            <div class="modal">
+                                                <a class="close-modal">
+                                                <svg viewBox="0 0 20 20">
+                                                    <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+                                                </svg>
+                                                </a>
+                                                <div class="modal-content">
 
-                        <tbody>
-                        <?php foreach ($all_valus_notes as $note_values){ 
-                            $note_values_note = $note_values['note_values'];
+                                                    <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
+                                                    <div class="note-reply-page">
+                                                        <form method="POST">
+                                                            <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
+                                                            <input type="hidden" name="note_reply_admin_role" value="<?php echo get_current_user_id(); ?>" />
+                                                            <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
+                                                            <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
+                                                            <div class="next-conversation">
+                                                                <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
+                                                                <label class="switch">
+                                                                    <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
+                                                                    <input type="hidden" name="next_conv_allowed" value="0" />
+                                                                    <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
+                                                                    <span class="slider round"></span>
+                                                                </label>
+                                                            </div>
+                                                            <input type="submit" class="note-reply" value="Reply">
+                                                        </form>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            </div>
+                                    <?php }?>  
+                                </td>
+                                <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
+                                <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
+                            </tr>
+                            <?php
+                                }
                             ?>
-                       <tr>
-                            <td><?php 
-                                $author_obj = get_user_by('id', $note_values['user_id']); 
-                                echo $author_obj->data->user_nicename; ?></td>
-                            <td><?php echo $note_values_note; ?></td>
-                            <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
-                            <td><?php echo $note_values['insert_time']; ?></td>
-                            <td class="note-status-view">
-                                <?php if($note_values['note_status'] == ''){?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="approved" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
-                                        <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <span class="approved"><?php _e('Approved', 'wp_supper_sticky'); ?></span>
-                                        <button class="disapprovedd" value="delete" name="status"><?php _e('Delete', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <span class="disapprovedd"><?php _e('Disapproved', 'wp_supper_sticky'); ?></span>
-                                        <button class="disapprovedd" value="delete" name="status"><?php _e('Delete', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }?> 
-                            </td>
-                            <td>
-                                <?php if($note_values['note_status'] == 'Disapproved'){?>
-                                    <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
-                                <?php }else{
-                                        $current_id = $note_values['id'];
-                                    ?>
-                                    <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
-                                        <div class="modal-overlay">
-                                        <div class="modal">
-                                            <a class="close-modal">
-                                            <svg viewBox="0 0 20 20">
-                                                <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
-                                            </svg>
-                                            </a>
-                                            <div class="modal-content">
-
-                                                <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
-                                                <div class="note-reply-page">
-                                                    <form method="POST">
-                                                        <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
-                                                        <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
-                                                        <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
-                                                        
-                                                        <div class="next-conversation">
-                                                            <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
-                                                            <label class="switch">
-                                                                <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
-                                                                <input type="hidden" name="next_conv_allowed" value="0" />
-                                                                <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
-                                                                <span class="slider round"></span>
-                                                            </label>
-                                                            <!-- <p class="checked-message"></p> -->
-                                                        </div>
-                                                        <input type="submit" class="note-reply" value="Reply">
-                                                    </form>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                        </div>
-                                <?php }?>  
-                            </td>
-                            <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
-                            <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
-                        </tr>
-                        <?php } ?>
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-                
-                <div id="approved" class="tabcontent">
-                    <div class="table-responsive">
-                    <table class="table sticky-notes-data-table jquerydatatable">
-                        <thead>
-                        <tr class="note-heading-wrapper">
-                            <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Disapprove Comment', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php
-                            $table_name = $this->wpdb->prefix . 'super_sticky_notes';
-                            $qry = $this->wpdb->prepare("SELECT * FROM $table_name WHERE `note_status` = %s", 'Approved');
-                            $all_valus_notes = $wpdb->get_results($qry, OBJECT);                   
-                            $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
-                            
-                            foreach ($all_valus_notes as $note_values){
-                        ?>
-                        <tr>
-                            <td><?php $author_obj = get_user_by('id', $note_values['user_id']); echo $author_obj->data->user_nicename; ?></td>
-                            <td><?php echo $note_values['note_values']; ?></td>
-                            <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
-                            <td><?php echo $note_values['insert_time']; ?></td>
-                            <td class="note-status-view">
-                                <?php if($note_values['note_status'] == ''){?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="approved" value="Approved" name="status"><?php _e('Approved', 'wp_super_sticky_notes'); ?></button>
-                                        <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="disapprovedd" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="approvedd" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }?> 
-                            </td>
-                            <td>
-                                <?php if($note_values['note_status'] == 'Disapproved'){?>
-                                    <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
-                                <?php }else{
-                                    $current_id = $note_values['id'];
-                                    ?>
-                                    <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
-                                        <div class="modal-overlay">
-                                        <div class="modal">
-                                            <a class="close-modal">
-                                            <svg viewBox="0 0 20 20">
-                                                <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
-                                            </svg>
-                                            </a>
-                                            <div class="modal-content">
-
-                                                <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
-                                                <div class="note-reply-page">
-                                                    <form method="POST">
-                                                        <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
-                                                        <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
-                                                        <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
-                                                        <div class="next-conversation">
-                                                            <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
-                                                            <label class="switch">
-                                                                <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
-                                                                <input type="hidden" name="next_conv_allowed" value="0" />
-                                                                <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
-                                                                <span class="slider round"></span>
-                                                            </label>
-                                                        </div>
-                                                        <input type="submit" class="note-reply" value="Reply">
-                                                    </form>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                        </div>
-                                <?php }?>  
-                            </td>
-                            <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
-                            <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
-                        </tr>
-                        <?php
-                            }
-                        ?>
-                        </tbody>
-                    </table>
-                    </div>
-
-                </div>
-                <div id="disapproved" class="tabcontent">
-                    <div class="table-responsive">
-                    <table class="table sticky-notes-data-table jquerydatatable">
-                    <thead>
-                        <tr class="note-heading-wrapper">
-                            <th><?php _e('User', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Asked Question', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Page/Post', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('AskedOn', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Approve Comment', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Action', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('Reply', 'wp_super_sticky_notes'); ?></th>
-                            <th><?php _e('RepliedOn', 'wp_super_sticky_notes'); ?></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php
-                            $table_name = $this->super_sticky_notes_tbl;
-                            $ary = $this->wpdb->prepare("SELECT * FROM $table_name WHERE `note_status` = %s", 'Disapproved');
-                            $all_valus_notes = $this->wpdb->get_results($ary, OBJECT);                   
-                            $all_valus_notes = json_decode(json_encode($all_valus_notes), true);
-                            
-                            foreach ($all_valus_notes as $note_values){
-                        ?>
-                        <tr>
-                            <td><?php $author_obj = get_user_by('id', $note_values['user_id']); echo $author_obj->data->user_nicename; ?></td>
-                            <td><?php echo $note_values['note_values']; ?></td>
-                            <td class="note-title"><a href="<?php echo get_permalink($note_values['page_id']); ?>" target="_blank"><?php echo $note_values['title']; ?></a></td>
-                            <td><?php echo $note_values['insert_time']; ?></td>
-                            <td class="note-status-view">
-                                <?php if($note_values['note_status'] == ''){?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="approved" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
-                                        <button class="disapproved" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Approved'){ ?>
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="disapprovedd" value="Disapproved" name="status"><?php _e('Disapprove', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }elseif($note_values['note_status'] == 'Disapproved'){ ?> 
-                                    <form method="POST">
-                                        <input type="hidden" name="status_message" value="<?php echo $note_values['id']; ?>" />
-                                        <button class="approvedd" value="Approved" name="status"><?php _e('Approve', 'wp_super_sticky_notes'); ?></button>
-                                    </form>
-                                <?php }?> 
-                            </td>
-                            <td>
-                                <?php if($note_values['note_status'] == 'Disapproved'){?>
-                                    <div class="disapproved-reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></div>
-                                <?php }else{
-                                        $current_id = $note_values['id'];
-                                    ?>
-                                    <button class="reply"><?php _e('REPLY', 'wp_super_sticky_notes'); ?></button>
-                                        <div class="modal-overlay">
-                                        <div class="modal">
-                                            <a class="close-modal">
-                                            <svg viewBox="0 0 20 20">
-                                                <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
-                                            </svg>
-                                            </a>
-                                            <div class="modal-content">
-
-                                                <h3><?php _e('Write your reply', 'wp_super_sticky_notes'); ?></h3>
-                                                <div class="note-reply-page">
-                                                    <form method="POST">
-                                                        <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
-                                                        <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
-                                                        <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
-                                                        <div class="next-conversation">
-                                                            <p><?php _e('Next Conversation Allowed', 'wp_super_sticky_notes'); ?></p>
-                                                            <label class="switch">
-                                                                <?php $checked = ($note_values['next_conv_allowed'] == 1) ? 'checked' : ''; ?>
-                                                                <input type="hidden" name="next_conv_allowed" value="0" />
-                                                                <input type="checkbox" name="next_conv_allowed" value="1" <?php echo $checked; ?>/>
-                                                                <span class="slider round"></span>
-                                                            </label>
-                                                        </div>
-                                                        <input type="submit" class="note-reply" value="Reply">
-                                                    </form>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                        </div>
-                                <?php }?>  
-                            </td>
-                            <td class="note-class-view"><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_reply']; } ?></td>
-                            <td><?php if($note_values['note_status'] == 'Disapproved'){ ?> <div class="note-disapproved"><p><?php _e('Disapproved', 'wp_super_sticky_notes'); ?></p></div> <?php }else{ echo $note_values['note_repliedOn']; } ?></td>
-                        </tr>
-                        <?php
-                            }
-                        ?>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
                     </div>
 
                 </div>
@@ -1728,12 +1828,12 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                     if ( get_option( 'auto_approving_ur_name' ) !== false ) {
                                                         $auto_approving_ur_name = get_option( 'auto_approving_ur_name');
                                                     }
-                                                    foreach($roles as $role) {
+                                                    foreach($roles as $key => $role) {
 
-                                                        $checked = ( in_array( $role ,$auto_approving_ur_name ) ) ? 'checked' : '';
+                                                        $checked = ( in_array( $key ,$auto_approving_ur_name ) ) ? 'checked' : '';
                                                     ?>
                                                         <li>
-                                                            <input type="checkbox" name="auto_approving_ur_name[]" id="checkbox_auto_approving_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <input type="checkbox" name="auto_approving_ur_name[]" id="checkbox_auto_approving_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $key ?>" <?php echo $checked; ?>/>
                                                             <label for="checkbox_auto_approving_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
                                                         </li>
                                                     <?php } ?>
@@ -1753,17 +1853,18 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                     <?php 
                                                     global $wp_roles;
                                                     $roles = $wp_roles->get_names();
+
                                                     $restrict_ur_name = array();
                                                     if ( get_option( 'restrict_ur_name' ) !== false ) {
                                                         $restrict_ur_name = get_option( 'restrict_ur_name');
                                                     }
-                                                    foreach($roles as $role) {
+                                                    foreach($roles as $key => $role) {
 
-                                                        $checked = ( in_array( $role ,$restrict_ur_name ) ) ? 'checked' : '';
+                                                        $checked = ( in_array( $key ,$restrict_ur_name ) ) ? 'checked' : '';
                                                         
                                                     ?>
                                                         <li>
-                                                            <input type="checkbox" name="restrict_ur_name[]" id="checkbox_restrict_comments_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <input type="checkbox" name="restrict_ur_name[]" id="checkbox_restrict_comments_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $key ?>" <?php echo $checked; ?>/>
                                                             <label for="checkbox_restrict_comments_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
                                                         </li>
                                                     <?php } ?>
@@ -1781,18 +1882,20 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                         <input type="checkbox" class="wssn-hidden" name="power_to_reply_ur_name[]" id="checkbox_power_to_reply" value="checkbox" checked/>
                                                     </li>
                                                     <?php 
-                                                    $roles = array( 'Author', 'Contributor', 'Tutor Instructor', 'Teacher' );
+                                                    global $wp_roles;
+                                                    $roles = $wp_roles->get_names();
+                                                    // $roles = array( 'Author', 'Contributor', 'Tutor Instructor', 'Teacher' );
                                                     $power_to_reply_ur_name = array();
                                                     if ( get_option( 'power_to_reply_ur_name' ) !== false ) {
                                                         $power_to_reply_ur_name = get_option( 'power_to_reply_ur_name');
                                                     }
-                                                    foreach($roles as $role) {
+                                                    foreach($roles as $key => $role) {
 
-                                                        $checked = ( in_array( $role ,$power_to_reply_ur_name ) ) ? 'checked' : '';
+                                                        $checked = ( in_array( $key ,$power_to_reply_ur_name ) ) ? 'checked' : '';
                                                         
                                                     ?>
                                                         <li>
-                                                            <input type="checkbox" name="power_to_reply_ur_name[]" id="checkbox_power_to_reply_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $role ?>" <?php echo $checked; ?>/>
+                                                            <input type="checkbox" name="power_to_reply_ur_name[]" id="checkbox_power_to_reply_<?php echo str_replace(' ', '_', $role) ?>" value="<?php echo $key ?>" <?php echo $checked; ?>/>
                                                             <label for="checkbox_power_to_reply_<?php echo str_replace(' ', '_', $role) ?>"><?php echo $role ?></label>
                                                         </li>
                                                     <?php } ?>
@@ -1936,6 +2039,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
             if (isset($_POST['note_reply_ids']))
             {
                 $status_ids = $_POST['note_reply_ids'];
+                $note_reply_admin_role = $_POST['note_reply_admin_role'];
                 $note_reply = $_POST['note_reply_text'];
                 $next_conv_allowed = $_POST['next_conv_allowed'];
                 $note_repliedOn_date = date("Y-m-d");
@@ -1951,9 +2055,9 @@ if (!class_exists('wp_super_sticky_notesClass')) {
 
                 $to = $user_email;
 
-                $subject = 'Congratulations Admin has replied to your comment.';
+                $subject = 'Congratulations Instructor has replied to your comment.';
                 $body = '<p><strong>Your Question :</strong> ' . $note_values . '.</br></p>' .
-                        '<p><strong>Admin Reply :</strong> ' . $note_reply . '.</br></p>' .
+                        '<p><strong>Instructor Reply :</strong> ' . $note_reply . '.</br></p>' .
                         '<p>Next Conversation : ' . $next_con . '.</br></p>';
                 $headers = array('Content-Type: text/html; charset=UTF-8');
 
@@ -1963,6 +2067,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 $table_name = $wpdb->prefix . 'super_sticky_notes';
                 $wpdb->update( $table_name,
                 array(
+                        'note_reply_admin_role' => $note_reply_admin_role,
                         'note_reply' => $note_reply,
                         'next_conv_allowed' => $next_conv_allowed,
                         'note_repliedOn' => $note_repliedOn_date
@@ -1970,8 +2075,8 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                 array(
                     'id'=> $status_ids
                 ),
-                array('%s', '%d', '%s'),
-                array('%d')
+                array( '%d', '%s', '%d', '%s' ),
+                array( '%d' )
                 );
             }
 
@@ -2032,6 +2137,7 @@ if (!class_exists('wp_super_sticky_notesClass')) {
                                                 <div class="note-reply-page">
                                                     <form method="POST">
                                                         <input type="hidden" name="note_reply_ids" value="<?php echo $current_id; ?>" />
+                                                        <input type="hidden" name="note_reply_admin_role" value="<?php echo get_current_user_id(); ?>" />
                                                         <!-- <input type="text" name="note_reply_title" placeholder="Title"> -->
                                                         <textarea name="note_reply_text" id="note_reply_text" placeholder="Write your reply.." style="height:200px"><?php echo $note_values['note_reply']; ?></textarea>
                                                         
